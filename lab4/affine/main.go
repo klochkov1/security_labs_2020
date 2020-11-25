@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	uaalpha "github.com/klochkov1/security_labs_2020/uaalpha"
+	uaalpha "github.com/klochkov1/security_labs_2020/lab4/uaalpha"
 	"io"
 	"log"
 	"math/big"
