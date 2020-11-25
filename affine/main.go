@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
-	"math/big"
-
 	uaalpha "github.com/klochkov1/security_labs_2020/uaalpha"
+	"io"
+	"log"
+	"math/big"
+	"os"
 )
 
 func pmod(x, d int) int {
@@ -49,26 +52,9 @@ func getAffineDecoder(a, b int) map[rune]rune {
 	return decoder
 }
 
-func codeRunes(coder map[rune]rune, orig []rune) []rune {
-	coded := make([]rune, 0, len(orig))
-	for _, v := range orig {
-		coded = append(coded, codeRune(coder, v))
-	}
-	return coded
-}
-
-func codeRune(coder map[rune]rune, orig rune) rune {
+func encodeRune(coder map[rune]rune, orig rune) rune {
 	if k, ok := coder[orig]; ok {
 		orig = k
-	}
-	return orig
-}
-
-func decodeRunes(decoder map[rune]rune, coded []rune) []rune {
-	orig := make([]rune, 0, len(coded))
-	for _, v := range coded {
-		orig = append(orig, decodeRune(decoder, v))
-		// fmt.Printf("%q : %q\n", string(v), string(decodeRune(decoder, v)))
 	}
 	return orig
 }
@@ -80,17 +66,48 @@ func decodeRune(decoder map[rune]rune, orig rune) rune {
 	return orig
 }
 
+func processStdin(coder map[rune]rune, processor func(map[rune]rune, rune) rune) {
+	reader := bufio.NewReader(os.Stdin)
+	// coded, err := os.Create("test.txt")
+	// defer coded.Close()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// writer := bufio.NewWriter(coded)
+
+	for {
+		r, _, err := reader.ReadRune()
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				log.Fatal(err)
+			}
+		}
+		fmt.Print(string(processor(coder, r)))
+		// writer.WriteRune(codeRune(coder, r))
+		// writer.Flush()
+	}
+}
+
 func main() {
 	var a, b int
-	flag.IntVar(&a, "a", 1, "number of letters sequence to count in file")
-	flag.IntVar(&b, "b", 1, "number of letters sequence to count in file")
+	flag.IntVar(&a, "a", -1, "number of letters sequence to count in file")
+	flag.IntVar(&b, "b", -1, "number of letters sequence to count in file")
+	decode := flag.Bool("decode", false, "decode stdin and print to stdout")
+	encode := flag.Bool("encode", false, "encode stdin and print to stdout")
 	flag.Parse()
-	str := "Привіт, як справи?"
-	fmt.Println(str)
-	strRunes := []rune(str)
-	coder := getAffineCoder(a, b)
-	decoder := getAffineDecoder(a, b)
-	coded := codeRunes(coder, strRunes)
-	fmt.Println(string(coded))
-	fmt.Println(string(decodeRunes(decoder, coded)))
+
+	if (*decode && *encode) || !(*decode || *encode) || (a == -1 && b == -1) {
+		fmt.Println("a and b values must be provided and either decode or encode flags must be set!")
+		flag.PrintDefaults()
+	}
+	var coder map[rune]rune
+	if *encode {
+		coder = getAffineCoder(a, b)
+		processStdin(coder, encodeRune)
+	} else if *decode {
+		coder = getAffineDecoder(a, b)
+		processStdin(coder, decodeRune)
+	}
 }
